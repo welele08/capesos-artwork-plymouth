@@ -1,0 +1,130 @@
+screen_width  = Window.GetWidth();
+screen_height = Window.GetHeight();
+screen_ratio = screen_height / screen_width;
+
+bg_image = Image("background.png");
+if (screen_ratio > pic_ratio)
+{
+  scale_factor =  screen_height / bg_image.GetHeight();
+}
+else
+{
+  scale_factor =  screen_width / bg_image.GetWidth();
+}
+
+fun load_sprite(pic_image, posX, posY, layer) #pos_ is a number between 0 and 1
+{
+  pic_width  = pic_image.GetWidth();
+  pic_height = pic_image.GetHeight();
+  pic_ratio  = pic_height / pic_width;
+
+  scaled_pic_image = pic_image.Scale(pic_width * scale_factor, pic_height * scale_factor);
+  pic_sprite = Sprite(scaled_pic_image); # Create the a sprite using the scaled image
+
+  pic_sprite.SetX(posX*screen_width  - scaled_pic_image.GetWidth()  / 2); # Place in the centre
+  pic_sprite.SetY(posY*screen_height - scaled_pic_image.GetHeight() / 2);
+  pic_sprite.SetZ(layer); # Place right at the back
+
+  return pic_sprite;
+}
+
+### Loading wallpaper
+
+greyground_image  = Image("grey.png");
+greyground_sprite = Sprite(greyground_image.Scale(screen_width, screen_height));
+greyground_sprite.SetZ(-10000);
+
+bg_sprite = load_sprite(bg_image, 0.5, 0.5, -1);
+bg_sprite.SetOpacity(0);
+
+### Loading sprites
+
+part1_image  = Image("part1.png");
+part1_sprite = load_sprite(part1_image, 0.3, 0.5, 0);
+part1_sprite.SetOpacity(0);
+
+part2_image  = Image("part2.png");
+part2_sprite = load_sprite(part2_image, 0.7, 0.5, 0);
+part2_sprite.SetOpacity(0);
+
+part3_image  = Image("part3.png");
+part3_sprite = load_sprite(part3_image, 0.5, 0.5, 0);
+part3_sprite.SetOpacity(0);
+
+#bouton_image  = Image("bouton.png");
+#bouton_sprite = load_sprite(bouton_image, 0.5, 0.5, 1);
+
+final_image  = Image("final.png");
+final_sprite = load_sprite(final_image, 0.5, 0.5, 10000);
+final_sprite.SetOpacity(0);
+
+titre_image  = Image("titre.png");
+titre_sprite = load_sprite(titre_image, 0.5, 0.8, 10000);
+titre_sprite.SetOpacity(0);
+
+fun progress_callback(time, progress)
+{
+
+}
+Plymouth.SetBootProgressFunction(progress_callback);
+
+nb_refresh = 0;
+state = 1;
+
+fun refresh_callback()
+{
+  nb_refresh++;
+  if (state==1 && part1_sprite.GetX() >= screen_width/2 - part1_sprite.GetImage().GetWidth()/2)
+  {
+    state=2;
+    part1_sprite.SetOpacity(1);
+    part2_sprite.SetOpacity(1);
+  }
+  else if (state==2 && part3_sprite.GetOpacity()>=1)
+  {
+    state=3;
+  }
+  else if (state==3 && final_sprite.GetOpacity()>=1)
+  {
+    state=4;
+  }
+
+  if (state==1)
+  {
+    new_opac = part1_sprite.GetOpacity()+0.02;
+    if (new_opac>=1) new_opac=1;
+    part1_sprite.SetX(part1_sprite.GetX()+2);
+    part2_sprite.SetX(part2_sprite.GetX()-2);
+    part1_sprite.SetOpacity(new_opac);
+    part2_sprite.SetOpacity(new_opac);
+  }
+  else if (state==2)
+  {
+    new_opac = part3_sprite.GetOpacity()+0.05;
+    if (new_opac>=1) new_opac=1;
+    part3_sprite.SetOpacity(new_opac);
+  }
+  else if (state==3)
+  {
+    new_opac =final_sprite.GetOpacity()+0.05;
+    if (new_opac>=1) new_opac=1;
+    final_sprite.SetOpacity(new_opac);
+    bg_sprite.SetOpacity(new_opac);
+    titre_sprite.SetOpacity(new_opac);
+  }
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+fun quit()
+{
+  while(state<4)
+  {
+    refresh_callback();
+  }
+}
+
+Plymouth.SetQuitFunction(quit);
+
+# Plymouth.SetBootProgressFunction(fonction); appelle la fonction avec 2 parametres, 1: temps de boot, 2: avancement (entre 0 et 1)
+# Plymouth.SetUpdateStatusFunction(fonction); the callback function is called with the new boot status string
+# To determine the mode of operation plymouth was started in use Plymouth.GetMode which returns a string of one of: "boot", "shutdown", "suspend", "resume" or unknown.
